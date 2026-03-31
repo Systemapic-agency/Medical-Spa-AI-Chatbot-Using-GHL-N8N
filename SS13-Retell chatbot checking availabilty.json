@@ -1,0 +1,250 @@
+{
+  "name": "retell chatbot checking availabilty",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "addToDate",
+        "magnitude": "={{ $json.formattedDate }}",
+        "duration": 1,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        576,
+        -16
+      ],
+      "id": "ded42dcf-213e-40fa-85d2-5d49caf1aaa4",
+      "name": "Get Next Date"
+    },
+    {
+      "parameters": {
+        "operation": "formatDate",
+        "date": "={{ $json.newDate }}",
+        "format": "x",
+        "outputFieldName": "endDate",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        784,
+        -16
+      ],
+      "id": "16be082e-860f-4623-91e2-2601261a74d2",
+      "name": "Get End Date"
+    },
+    {
+      "parameters": {
+        "operation": "formatDate",
+        "date": "={{ $json.body.args.appointment_date }}",
+        "format": "x",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        336,
+        -16
+      ],
+      "id": "458d7e66-9226-472d-8e6f-2533c532377d",
+      "name": "Get Start Date"
+    },
+    {
+      "parameters": {
+        "url": "https://services.leadconnectorhq.com/calendars/ecr2X6XjI6k7ljIiSd96/free-slots",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "endDate",
+              "value": "={{ $json.endDate }}"
+            },
+            {
+              "name": "startDate",
+              "value": "={{ $('Get Start Date').item.json.formattedDate }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer pit-08edd708-d4df-49c1-bfab-8aa73c88fa32"
+            },
+            {
+              "name": "Version",
+              "value": "2021-04-15"
+            },
+            {
+              "name": "timezone",
+              "value": "America/New_York"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        992,
+        -16
+      ],
+      "id": "0eb61659-f43d-4f64-b056-38cb26ea3f92",
+      "name": "Get free slots from ghl"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The datetime to check\nconst targetDateTime = $('Webhook').first().json.body.appointment_date;\n\n// The data object\nconst data = $input.first().json;\n\n// Helper function to format time while respecting the original timezone\nfunction formatTime(dateString) {\n  const date = new Date(dateString);\n  const options = {\n    hour: 'numeric',\n    minute: 'numeric',\n    hour12: true,\n    timeZone: 'America/Los_Angeles' // Use a specific timezone if needed\n  };\n  return date.toLocaleTimeString('en-US', options);\n}\n\n// Helper function to get day of the week\nfunction getDayOfWeek(dateString) {\n  const date = new Date(dateString);\n  const options = { weekday: 'long', timeZone: 'America/Los_Angeles' }; // Use specific timezone if needed\n  return date.toLocaleDateString('en-US', options);\n}\n\n// Flatten the slots into a single array\nlet allSlots = [];\nfor (const [date, details] of Object.entries(data)) {\n  if (details.slots) {\n    allSlots = allSlots.concat(details.slots);\n  }\n}\n\n// Check if the target datetime is present\nif (allSlots.includes(targetDateTime)) {\n  const day = getDayOfWeek(targetDateTime);\n  const time = formatTime(targetDateTime);\n  return { result: `${day} at ${time} is available.` };\n} else {\n  // Convert datetimes to Date objects with original strings for time zone preservation\n  const slotsWithOriginal = allSlots.map(slot => ({ date: new Date(slot), original: slot }));\n  const targetDate = new Date(targetDateTime);\n\n  // Sort slots by date\n  const sortedSlots = slotsWithOriginal.sort((a, b) => a.date - b.date);\n\n  // Find the two closest slots\n  let closestBefore = null;\n  let closestAfter = null;\n  let secondClosestAfter = null;\n\n  for (let i = 0; i < sortedSlots.length; i++) {\n    if (sortedSlots[i].date < targetDate) {\n      closestBefore = sortedSlots[i].original;\n    } else if (!closestAfter) {\n      closestAfter = sortedSlots[i].original;\n      if (i + 1 < sortedSlots.length) {\n        secondClosestAfter = sortedSlots[i + 1].original;\n      }\n      break;\n    }\n  }\n\n  // If no closestBefore, return two closest after\n  if (!closestBefore) {\n    closestBefore = closestAfter;\n    closestAfter = secondClosestAfter;\n  }\n\n  return { closestBefore, closestAfter };\n}\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1264,
+        -16
+      ],
+      "id": "009f4efe-e2b7-45ee-a46b-de7720b86257",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get current year from system date\nconst currentYear = new Date().getFullYear();\nfor (const item of $input.all()) {\n  const appointmentDate = item.json.body?.args?.appointment_datetime;\n  if (appointmentDate) {\n    const oldDate = new Date(appointmentDate);\n    oldDate.setFullYear(currentYear);\n    // Set the updated date back in the same nested structure\n    item.json.body.args.appointment_datetime = oldDate.toISOString();\n  }\n}\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        -16
+      ],
+      "id": "10ac3562-82b0-4eb2-9086-facf6c862888",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.closestBefore }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1504,
+        -16
+      ],
+      "id": "5beba7e4-7e17-4da0-b2b0-71e49925207d",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "89c55f9a-3c64-4783-8a86-1c19f7cbcd95",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        -16
+      ],
+      "id": "5590b89a-a7e3-4de1-b2a4-f3647ad5962e",
+      "name": "Webhook",
+      "webhookId": "89c55f9a-3c64-4783-8a86-1c19f7cbcd95"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get Next Date": {
+      "main": [
+        [
+          {
+            "node": "Get End Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get End Date": {
+      "main": [
+        [
+          {
+            "node": "Get free slots from ghl",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Start Date": {
+      "main": [
+        [
+          {
+            "node": "Get Next Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get free slots from ghl": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Get Start Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e6e1503e-6ae1-4040-b20c-087bf3b3b8c6",
+  "meta": {
+    "instanceId": "6c4c446d5304742a3c3b35610a91a9314f8fa6e78abf59256949d198dc0f9226"
+  },
+  "id": "rM9j2cEEnt9L7LN6",
+  "tags": []
+}

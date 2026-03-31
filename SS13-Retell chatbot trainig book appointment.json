@@ -1,0 +1,493 @@
+{
+  "name": "retell chatbot trainig book appointment",
+  "nodes": [
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.total }}",
+                    "rightValue": 0,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    },
+                    "id": "129628bd-6858-4d60-993f-a4b96921094d"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Not Found"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "a6800472-ad01-4c21-a323-c6e50c70486d",
+                    "leftValue": "={{ $json.total }}",
+                    "rightValue": 1,
+                    "operator": {
+                      "type": "number",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Found"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Error"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -608,
+        192
+      ],
+      "id": "cef1d7ae-4abb-4c99-9a32-4fa9a64b5c6e",
+      "name": "Contact Status"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  result: \"I apologize; it seems we are having an issue.\"\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        400
+      ],
+      "id": "796b6dbc-d1d0-4bf3-bf7b-da0ccd7bd7b1",
+      "name": "Return Error"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Beare pit-08edd708-d4df-49c1-bfab-8aa73c88fa32"
+            },
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"{{ $('Webhook').item.json.body.args.client_name }}\",\n  \"email\": \"{{ $('Webhook').item.json.body.args.email|| \"\"}}\",\n  \"locationId\": \"UWwyAASNGWJugsWVEFCI\",\n  \"phone\": \"{{ $('Webhook').item.json.body.args.client_phone }}\",\n  \"tags\": [\"ai_agent\"]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -144,
+        -48
+      ],
+      "id": "5acdfd90-e7f0-4f6e-8c49-4ee37e2aa10f",
+      "name": "Create a contact"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/calendars/events/appointments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer pit-08edd708-d4df-49c1-bfab-8aa73c88fa32"
+            },
+            {
+              "name": "Version",
+              "value": "2021-04-15"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"Service - {{ $('Webhook').item.json.body.args.service }}\",\n  \"meetingLocationType\": \"custom\",\n  \"meetingLocationId\": \"custom_0\",\n  \"overrideLocationConfig\": false,\n  \"appointmentStatus\": \"confirmed\",\n  \"assignedUserId\": \"jNB6mnxJO6vO91HZbt4v\",\n  \"ignoreDateRange\": false,\n  \"toNotify\": false,\n  \"ignoreFreeSlotValidation\": true,\n  \"calendarId\": \"ecr2X6XjI6k7ljIiSd96\",\n  \"locationId\": \"{{ $json.contact.locationId }}\",\n  \"contactId\": \"{{ $json.contact.id }}\",\n  \"startTime\": \"{{ $('Code in JavaScript1').item.json.body.args.appointment_datetime}}\"\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        432,
+        -48
+      ],
+      "id": "0467eb21-26ab-4a24-bb63-4381712080d9",
+      "name": "Book Appointment"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/contacts/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer pit-08edd708-d4df-49c1-bfab-8aa73c88fa32"
+            },
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"locationId\": \"UWwyAASNGWJugsWVEFCI\",\n  \"page\": 1,\n  \"pageLimit\": 1,\n  \"filters\": [\n    {\n      \"field\": \"phone\",\n      \"operator\": \"eq\",\n      \"value\": \"+1{{ $json.body.args }}\"\n    }\n  ],\n  \"sort\": [\n    {\n      \"field\": \"firstNameLowerCase\",\n      \"direction\": \"asc\"\n    }\n  ]\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -832,
+        224
+      ],
+      "id": "7ab777b5-4ac3-451a-a8dd-c5d7d4fd3ee7",
+      "name": "Search contact"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/calendars/events/appointments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer pit-08edd708-d4df-49c1-bfab-8aa73c88fa32"
+            },
+            {
+              "name": "Version",
+              "value": "2021-04-15"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"Service - {{ $('Webhook').item.json.body.args.service }}\",\n  \"meetingLocationType\": \"custom\",\n  \"meetingLocationId\": \"custom_0\",\n  \"overrideLocationConfig\": false,\n  \"appointmentStatus\": \"confirmed\",\n  \"assignedUserId\": \"jNB6mnxJO6vO91HZbt4v\",\n  \"ignoreDateRange\": false,\n  \"toNotify\": false,\n  \"ignoreFreeSlotValidation\": true,\n  \"calendarId\": \"ecr2X6XjI6k7ljIiSd96\",\n  \"locationId\": \"{{ $('Search contact').item.json.contacts[0].locationId }}\",\n  \"contactId\": \"{{ $('Search contact').item.json.contacts[0].id }}\",\n  \"startTime\": \"{{ $('Code in JavaScript1').item.json.body.args.appointment_datetime }}\"\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -64,
+        240
+      ],
+      "id": "851f2fc4-27bd-447c-8636-4d3d1c4c1f01",
+      "name": "Book Appointment1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get current year from system date\nconst currentYear = new Date().getFullYear();\n\nfor (const item of $input.all()) {\n  const appointmentDate = item.json.body?.args?.appointment_date;\n\n  if (appointmentDate) {\n    const oldDate = new Date(appointmentDate);\n    oldDate.setFullYear(currentYear);\n\n    // Set the updated date back in the same nested structure\n    item.json.body.args.appointment_date = oldDate.toISOString();\n  }\n}\n\nreturn $input.all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1200,
+        224
+      ],
+      "id": "a06b0094-27d3-4e3a-af62-f20a5b6fa995",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/contacts",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer pit-08edd708-d4df-49c1-bfab-8aa73c88fa32"
+            },
+            {
+              "name": "Version",
+              "value": "2021-07-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \"{{ $('Code in JavaScript1').item.json.body.args.client_name }}\",\n  \"locationId\": \"UWwyAASNGWJugsWVEFCI\",\n  \"phone\": \"{{ $('Code in JavaScript1').item.json.body.args.client_phone }}\",\n  \"tags\": [\"ai_agent\"]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        80,
+        96
+      ],
+      "id": "f7887b65-3801-42b7-84b6-f0c28ff16f8e",
+      "name": "Create a contact1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://services.leadconnectorhq.com/calendars/events/appointments",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer pit-08edd708-d4df-49c1-bfab-8aa73c88fa32"
+            },
+            {
+              "name": "Version",
+              "value": "2021-04-15"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"title\": \"Service - {{ $('Webhook').item.json.body.args.service }}\",\n  \"meetingLocationType\": \"custom\",\n  \"meetingLocationId\": \"custom_0\",\n  \"overrideLocationConfig\": false,\n  \"appointmentStatus\": \"confirmed\",\n  \"assignedUserId\": \"jNB6mnxJO6vO91HZbt4v\",\n  \"ignoreDateRange\": false,\n  \"toNotify\": false,\n  \"ignoreFreeSlotValidation\": true,\n  \"calendarId\": \"ecr2X6XjI6k7ljIiSd96\",\n  \"locationId\": \"{{ $json.contact.locationId }}\",\n  \"contactId\": \"{{ $json.contact.id }}\",\n  \"startTime\": \"{{ $('Code in JavaScript1').item.json.body.args.appointment_datetime}}\"\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        368,
+        112
+      ],
+      "id": "8d28d248-47d9-4148-85c7-ab2a78a68daa",
+      "name": "Book Appointment2"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "e017b209-7a2d-4b08-acf3-64036262786d",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1408,
+        224
+      ],
+      "id": "a6a29326-867a-4c70-b273-718f1d81d444",
+      "name": "Webhook",
+      "webhookId": "e017b209-7a2d-4b08-acf3-64036262786d"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "330d3dc3-50bb-4577-910f-ffe6b9018305",
+              "leftValue": "={{ $('Webhook').item.json.body.args.email|| \"\"}}",
+              "rightValue": "@",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -400,
+        80
+      ],
+      "id": "d4948b70-8d57-49b0-812c-f93d7bd6c6a4",
+      "name": "If"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Contact Status": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Book Appointment1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a contact": {
+      "main": [
+        [
+          {
+            "node": "Book Appointment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search contact": {
+      "main": [
+        [
+          {
+            "node": "Contact Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Search contact",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a contact1": {
+      "main": [
+        [
+          {
+            "node": "Book Appointment2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Create a contact",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a contact1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "467d7e78-ece3-4e0d-9d46-10bf28347da8",
+  "meta": {
+    "instanceId": "6c4c446d5304742a3c3b35610a91a9314f8fa6e78abf59256949d198dc0f9226"
+  },
+  "id": "HpkqfSl4vtAHLvEV",
+  "tags": []
+}
